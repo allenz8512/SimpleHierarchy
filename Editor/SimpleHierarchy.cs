@@ -35,6 +35,16 @@ namespace nz.alle.SimpleHierarchy
             ObjectChangeEvents.changesPublished -= ChangesPublished;
             ObjectChangeEvents.changesPublished += ChangesPublished;
         }
+        
+        public static void OnDisable()
+        {
+            ClearItemViewCache();
+            foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
+            {
+                window.SceneHierarchy.treeView.ReloadData();
+            }
+            s_WindowLUT.Clear();
+        }
 
         // private static void OnHierarchyChanged()
         // {
@@ -55,6 +65,10 @@ namespace nz.alle.SimpleHierarchy
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect rect)
         {
+            if (!SimpleHierarchySettings.Enabled)
+            {
+                return;
+            }
             GetActiveWindow();
             // SceneHierarchyWindow window = GetActiveWindow();
             // DoDrawItem(window, instanceID, rect);
@@ -67,6 +81,10 @@ namespace nz.alle.SimpleHierarchy
 
         private static void OnUpdate()
         {
+            if (!SimpleHierarchySettings.Enabled)
+            {
+                return;
+            }
             TrackEditorWindows();
             // if (s_MouseOverWindow != EditorWindow.mouseOverWindow)
             // {
@@ -99,6 +117,10 @@ namespace nz.alle.SimpleHierarchy
 
         private static void ChangesPublished(ref ObjectChangeEventStream stream)
         {
+            if (!SimpleHierarchySettings.Enabled)
+            {
+                return;
+            }
             // HashSet<int> modifiedInstanceIDs = new();
             for (int i = 0; i < stream.length; ++i)
             {
@@ -295,7 +317,7 @@ namespace nz.alle.SimpleHierarchy
                 // 但是并没有及时重建RowList，强行拦截错误杜绝GuiClip异常，下一次刷新时会正确同步
                 item = hierarchy.treeView.GetItemAndRowIndex(instanceID, out int rowIndex);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 if (s_PrintDebug)
                 {
