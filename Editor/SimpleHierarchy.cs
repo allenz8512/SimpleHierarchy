@@ -7,12 +7,13 @@ using UnityEngine;
 using static nz.alle.SimpleHierarchy.Wrappers;
 using Object = UnityEngine.Object;
 
+// ReSharper disable once CheckNamespace
 namespace nz.alle.SimpleHierarchy
 {
     [InitializeOnLoad]
     internal static class SimpleHierarchy
     {
-        private static readonly bool s_PrintDebug = false;
+        private static readonly bool s_PrintDebug = true;
 
         private static Dictionary<EditorWindow, SceneHierarchyWindow> s_WindowLUT = new();
 
@@ -25,30 +26,32 @@ namespace nz.alle.SimpleHierarchy
         static SimpleHierarchy()
         {
             Init();
-            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
-            EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            // EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            // EditorApplication.hierarchyChanged += OnHierarchyChanged;
             EditorApplication.hierarchyWindowItemOnGUI -= OnHierarchyWindowItemOnGUI;
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyWindowItemOnGUI;
             EditorApplication.update -= OnUpdate;
             EditorApplication.update += OnUpdate;
+            ObjectChangeEvents.changesPublished -= ChangesPublished;
+            ObjectChangeEvents.changesPublished += ChangesPublished;
         }
 
-        private static void OnHierarchyChanged()
-        {
-            if (s_PrintDebug)
-            {
-                Debug.Log("OnHierarchyChanged");
-            }
-            ClearItemViewCache();
-            // EditorApplication.RepaintHierarchyWindow();
-            // foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
-            // {
-            //     // 强行要求所有DataSource刷新Rows
-            //     TreeViewController treeView = window.SceneHierarchy.treeView;
-            //     treeView.data.InitializeFull();
-            //     treeView.ReloadData();
-            // }
-        }
+        // private static void OnHierarchyChanged()
+        // {
+        //     if (s_PrintDebug)
+        //     {
+        //         Debug.Log("OnHierarchyChanged");
+        //     }
+        //     ClearItemViewCache();
+        // EditorApplication.RepaintHierarchyWindow();
+        // foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
+        // {
+        //     // 强行要求所有DataSource刷新Rows
+        //     TreeViewController treeView = window.SceneHierarchy.treeView;
+        //     treeView.data.InitializeFull();
+        //     treeView.ReloadData();
+        // }
+        // }
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect rect)
         {
@@ -92,6 +95,135 @@ namespace nz.alle.SimpleHierarchy
             //         window.SceneHierarchy.treeView.ReloadData();
             //     }
             // }
+        }
+
+        private static void ChangesPublished(ref ObjectChangeEventStream stream)
+        {
+            // HashSet<int> modifiedInstanceIDs = new();
+            for (int i = 0; i < stream.length; ++i)
+            {
+                ObjectChangeKind type = stream.GetEventType(i);
+                int modifiedInstanceID = 0;
+                switch (type)
+                {
+                    case ObjectChangeKind.CreateGameObjectHierarchy:
+                        stream.GetCreateGameObjectHierarchyEvent(
+                            i,
+                            out CreateGameObjectHierarchyEventArgs createGameObjectHierarchyEvent
+                        );
+                        modifiedInstanceID = createGameObjectHierarchyEvent.instanceId;
+                        break;
+                    case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
+                        stream.GetChangeGameObjectStructureHierarchyEvent(
+                            i,
+                            out ChangeGameObjectStructureHierarchyEventArgs
+                                changeGameObjectStructureHierarchy
+                        );
+                        modifiedInstanceID = changeGameObjectStructureHierarchy.instanceId;
+                        break;
+                    case ObjectChangeKind.ChangeGameObjectStructure:
+                        stream.GetChangeGameObjectStructureEvent(
+                            i,
+                            out ChangeGameObjectStructureEventArgs changeGameObjectStructure
+                        );
+                        modifiedInstanceID = changeGameObjectStructure.instanceId;
+                        break;
+                    case ObjectChangeKind.DestroyGameObjectHierarchy:
+                        stream.GetDestroyGameObjectHierarchyEvent(
+                            i,
+                            out DestroyGameObjectHierarchyEventArgs destroyGameObjectHierarchyEvent
+                        );
+                        RemoveItemViewCache(destroyGameObjectHierarchyEvent.instanceId);
+                        if (s_PrintDebug)
+                        {
+                            Debug.Log($"DestroyGameObjectHierarchy: {modifiedInstanceID}");
+                        }
+                        break;
+                }
+                if (modifiedInstanceID != 0)
+                {
+                    if (s_PrintDebug)
+                    {
+                        Debug.Log($"{type}: {modifiedInstanceID}");
+                    }
+                    UpdateItemViewCache(modifiedInstanceID);
+                    // modifiedInstanceIDs.Add(modifiedInstanceID);
+                }
+            }
+
+            // SceneHierarchyWindow activeWindow = GetActiveWindow();
+            // UpdateGameObjectTreeViewItemForWindow(activeWindow, modifiedInstanceIDs);
+            // activeWindow.Repaint();
+        }
+
+        private static ItemViewCache UpdateItemViewCache(int instanceID)
+        {
+            if (!s_ItemViewCacheLUT.TryGetValue(instanceID, out ItemViewCache itemViewCache))
+            {
+                itemViewCache = new ItemViewCache(instanceID);
+                s_ItemViewCacheLUT[instanceID] = itemViewCache;
+            }
+
+            GameObject gameObject = (GameObject)UnityEditor.EditorUtility.InstanceIDToObject(instanceID);
+            // 如果指定了Gizmo图标，那么使用之；否则尝试从GameObject的组件中获取图标
+            // 除了GameObject实例外，EditorGUIUtility.GetIconForObject()的参数必须为脚本的Asset对象，使用Component实例作为参数则无效
+            Texture2D icon = UnityEditor.EditorGUIUtility.GetIconForObject(gameObject);
+            if (!icon)
+            {
+                Component[] components = gameObject.GetComponents<Component>();
+                icon = GetIconFromComponents(gameObject, components);
+            }
+            if (icon)
+            {
+                itemViewCache.Icon = icon;
+                Texture selectedIcon = Wrappers.EditorUtility.GetIconInActiveState(icon);
+                // 没有找到对应的选中图标，那么使用相同的图标
+                if (selectedIcon)
+                {
+                    itemViewCache.SelectedIcon = (Texture2D)selectedIcon;
+                }
+                else
+                {
+                    itemViewCache.SelectedIcon = icon;
+                }
+            }
+            // 如果没有找到合适的图标，那么使用默认的
+            else
+            {
+                itemViewCache.Icon = PrefabUtility.GetIconForGameObject(gameObject);
+                itemViewCache.SelectedIcon =
+                    Wrappers.EditorUtility.GetIconInActiveState(itemViewCache.Icon) as Texture2D;
+            }
+
+            return itemViewCache;
+        }
+
+        private static void RemoveItemViewCache(int instanceID)
+        {
+            s_ItemViewCacheLUT.Remove(instanceID);
+        }
+
+        // private static void UpdateGameObjectTreeViewItemForWindow(
+        //     SceneHierarchyWindow window,
+        //     HashSet<int> instanceIDs)
+        // {
+        //     SceneHierarchy hierarchy = window.SceneHierarchy;
+        //     bool treeViewChanged = hierarchy.EnsureTreeViewUpToDate();
+        //     IList<TreeViewItem> rows = hierarchy.treeView.data.m_Rows;
+        //     foreach (TreeViewItem item in rows)
+        //     {
+        //         if (instanceIDs.Contains(item.id))
+        //         {
+        //             ItemViewCache itemViewCache = s_ItemViewCacheLUT[item.id];
+        //             UpdateGameObjectTreeViewItem(item, itemViewCache);
+        //         }
+        //     }
+        // }
+
+        private static void UpdateGameObjectTreeViewItem(TreeViewItem item, ItemViewCache itemViewCache)
+        {
+            item.icon = itemViewCache.Icon;
+            GameObjectTreeViewItemProxy.SetSelectedIcon(item, itemViewCache.SelectedIcon);
         }
 
         private static void ClearItemViewCache()
@@ -167,6 +299,9 @@ namespace nz.alle.SimpleHierarchy
             {
                 if (s_PrintDebug)
                 {
+                    Debug.LogWarning(
+                        $"Control id:{GUIUtility.GetControlID(FocusType.Passive)}, event type: {Event.current.type}"
+                    );
                     Debug.LogWarning($"Get view item for instanceID:{instanceID} Failed");
                 }
                 return;
@@ -191,53 +326,10 @@ namespace nz.alle.SimpleHierarchy
 
             if (!s_ItemViewCacheLUT.TryGetValue(instanceID, out ItemViewCache itemViewCache))
             {
-                itemViewCache = CreateItemViewCache(instanceID, item, objectPPTR);
-                s_ItemViewCacheLUT[instanceID] = itemViewCache;
+                itemViewCache = UpdateItemViewCache(instanceID);
             }
             // 覆盖原有图标
-            item.icon = itemViewCache.Icon;
-            GameObjectTreeViewItemProxy.SetSelectedIcon(item, itemViewCache.SelectedIcon);
-        }
-
-        private static ItemViewCache CreateItemViewCache(int instanceID,
-                                                         TreeViewItem item,
-                                                         Object objectPPTR)
-        {
-            GameObject gameObject = (GameObject)objectPPTR;
-
-            ItemViewCache itemViewCache = new()
-            {
-                InstanceID = instanceID
-            };
-            // 如果指定了Gizmo图标，那么使用之；否则尝试从GameObject的组件中获取图标
-            // 除了GameObject实例外，EditorGUIUtility.GetIconForObject()的参数必须为脚本的Asset对象，使用Component实例作为参数则无效
-            Texture2D icon = UnityEditor.EditorGUIUtility.GetIconForObject(gameObject);
-            if (!icon)
-            {
-                Component[] components = gameObject.GetComponents<Component>();
-                icon = GetIconFromComponents(gameObject, components);
-            }
-            if (icon)
-            {
-                itemViewCache.Icon = icon;
-                Texture selectedIcon = Wrappers.EditorUtility.GetIconInActiveState(icon);
-                // 没有找到对应的选中图标，那么使用相同的图标
-                if (selectedIcon)
-                {
-                    itemViewCache.SelectedIcon = (Texture2D)selectedIcon;
-                }
-                else
-                {
-                    itemViewCache.SelectedIcon = icon;
-                }
-            }
-            // 如果没有找到合适的图标，那么使用原来的
-            else
-            {
-                itemViewCache.Icon = item.icon;
-                itemViewCache.SelectedIcon = GameObjectTreeViewItemProxy.GetSelectedIcon(item);
-            }
-            return itemViewCache;
+            UpdateGameObjectTreeViewItem(item, itemViewCache);
         }
 
         private static Texture2D GetIconFromComponents(GameObject gameObject, Component[] components)
@@ -398,6 +490,11 @@ namespace nz.alle.SimpleHierarchy
             public Texture2D Icon;
 
             public Texture2D SelectedIcon;
+
+            public ItemViewCache(int instanceID)
+            {
+                InstanceID = instanceID;
+            }
         }
     }
 }

@@ -43,11 +43,11 @@ namespace nz.alle.SimpleHierarchy
 
         internal class SceneHierarchyWindow
         {
-            private object m_Target;
+            private EditorWindow m_Target;
 
             public SceneHierarchy SceneHierarchy { get; private set; }
 
-            public SceneHierarchyWindow(object target)
+            public SceneHierarchyWindow(EditorWindow target)
             {
                 m_Target = target;
                 object sceneHierarchy = ReflectionUtils.GetFieldValue(
@@ -66,6 +66,11 @@ namespace nz.alle.SimpleHierarchy
                     null,
                     "lastInteractedHierarchyWindow"
                 );
+
+            public void Repaint()
+            {
+                m_Target.Repaint();
+            }
         }
 
         internal class SceneHierarchy
@@ -153,6 +158,14 @@ namespace nz.alle.SimpleHierarchy
         {
             private object m_Target;
 
+            // public IList<TreeViewItem> m_Rows =>
+            //     ReflectionUtils.GetFieldValue<IList<TreeViewItem>>(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "m_Rows"
+            //     );
+
+
             // public bool m_NeedRefreshRows
             // {
             //     set =>
@@ -168,6 +181,15 @@ namespace nz.alle.SimpleHierarchy
             {
                 m_Target = target;
             }
+
+            // public IList<TreeViewItem> GetRows()
+            // {
+            //     return ReflectionUtils.InvokeMethod<IList<TreeViewItem>>(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "GetRows"
+            //     );
+            // }
 
             // public int GetRow(int id)
             // {
@@ -188,7 +210,7 @@ namespace nz.alle.SimpleHierarchy
             //         "InitIfNeeded"
             //     );
             // }
-            
+
             // public void EnsureFullyInitialized()
             // {
             //     ReflectionUtils.InvokeMethod(
@@ -197,32 +219,32 @@ namespace nz.alle.SimpleHierarchy
             //         "EnsureFullyInitialized"
             //     );
             // }
-            
-            public void InitializeFull()
-            {
-                ReflectionUtils.InvokeMethod(
-                    s_GameObjectTreeViewDataSourceType,
-                    m_Target,
-                    "InitializeFull"
-                );
-            }
 
-            public void SetOnVisibleRowsChanged(Action action)
-            {
-                Action onVisibleRowsChanged = ReflectionUtils.GetFieldValue<Action>(
-                    s_GameObjectTreeViewDataSourceType,
-                    m_Target,
-                    "onVisibleRowsChanged"
-                );
-                onVisibleRowsChanged = (Action)Delegate.Remove(onVisibleRowsChanged, action);
-                onVisibleRowsChanged = (Action)Delegate.Combine(onVisibleRowsChanged, action);
-                ReflectionUtils.SetFieldValue(
-                    s_GameObjectTreeViewDataSourceType,
-                    m_Target,
-                    "onVisibleRowsChanged",
-                    onVisibleRowsChanged
-                );
-            }
+            // public void InitializeFull()
+            // {
+            //     ReflectionUtils.InvokeMethod(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "InitializeFull"
+            //     );
+            // }
+
+            // public void SetOnVisibleRowsChanged(Action action)
+            // {
+            //     Action onVisibleRowsChanged = ReflectionUtils.GetFieldValue<Action>(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "onVisibleRowsChanged"
+            //     );
+            //     onVisibleRowsChanged = (Action)Delegate.Remove(onVisibleRowsChanged, action);
+            //     onVisibleRowsChanged = (Action)Delegate.Combine(onVisibleRowsChanged, action);
+            //     ReflectionUtils.SetFieldValue(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "onVisibleRowsChanged",
+            //         onVisibleRowsChanged
+            //     );
+            // }
         }
 
         internal static class GameObjectTreeViewItemProxy
