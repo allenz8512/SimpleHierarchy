@@ -400,8 +400,8 @@ namespace nz.alle.SimpleHierarchy
                     {
                         // 是Transform的话显示文件夹图标
                         string iconName = UnityEditor.EditorGUIUtility.isProSkin
-                            ? "d_FolderOpened Icon"
-                            : "FolderOpened Icon";
+                            ? "d_Folder Icon"
+                            : "Folder Icon";
                         preferredIcon =
                             UnityEditor.EditorGUIUtility.IconContent(iconName).image as Texture2D;
                     }
