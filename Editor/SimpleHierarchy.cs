@@ -13,7 +13,7 @@ namespace nz.alle.SimpleHierarchy
     [InitializeOnLoad]
     internal static class SimpleHierarchy
     {
-        private static readonly bool s_PrintDebug = true;
+        private static readonly bool s_PrintDebug = false;
 
         private static Dictionary<EditorWindow, SceneHierarchyWindow> s_WindowLUT = new();
 
