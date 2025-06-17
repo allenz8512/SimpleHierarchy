@@ -10,19 +10,19 @@ namespace nz.alle.SimpleHierarchy
 {
     internal static class Wrappers
     {
-        private static Type s_SceneHierarchyWindowType;
+        internal static Type s_SceneHierarchyWindowType;
 
-        private static Type s_SceneHierarchyType;
+        internal static Type s_SceneHierarchyType;
 
-        private static Type s_GameObjectTreeViewItemType;
+        internal static Type s_GameObjectTreeViewItemType;
 
-        private static Type s_TreeViewControllerType;
+        internal static Type s_TreeViewControllerType;
 
-        private static Type s_GameObjectTreeViewDataSourceType;
+        internal static Type s_GameObjectTreeViewDataSourceType;
 
-        // private static Type s_GameObjectTreeViewGUIType;
+        // internal static Type s_GameObjectTreeViewGUIType;
 
-        // private static Type s_EditorResourcesType;
+        // internal static Type s_EditorResourcesType;
 
         public static void Init()
         {
@@ -121,6 +121,11 @@ namespace nz.alle.SimpleHierarchy
                 );
             }
 
+            public void ReloadData()
+            {
+                ReflectionUtils.InvokeMethod(s_TreeViewControllerType, m_Target, "ReloadData");
+            }
+
             public TreeViewItem GetItemAndRowIndex(int id, out int row)
             {
                 object[] parameters =
@@ -148,9 +153,58 @@ namespace nz.alle.SimpleHierarchy
         {
             private object m_Target;
 
+            // public bool m_NeedRefreshRows
+            // {
+            //     set =>
+            //         ReflectionUtils.SetFieldValue(
+            //             s_GameObjectTreeViewDataSourceType,
+            //             m_Target,
+            //             "m_NeedRefreshRows",
+            //             value
+            //         );
+            // }
+
             public GameObjectTreeViewDataSource(object target)
             {
                 m_Target = target;
+            }
+
+            // public int GetRow(int id)
+            // {
+            //     return ReflectionUtils.InvokeMethod<int>(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "GetRow",
+            //         new[] { typeof(int) },
+            //         new object[] { id }
+            //     );
+            // }
+            //
+            // public void InitIfNeeded()
+            // {
+            //     ReflectionUtils.InvokeMethod(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "InitIfNeeded"
+            //     );
+            // }
+            
+            // public void EnsureFullyInitialized()
+            // {
+            //     ReflectionUtils.InvokeMethod(
+            //         s_GameObjectTreeViewDataSourceType,
+            //         m_Target,
+            //         "EnsureFullyInitialized"
+            //     );
+            // }
+            
+            public void InitializeFull()
+            {
+                ReflectionUtils.InvokeMethod(
+                    s_GameObjectTreeViewDataSourceType,
+                    m_Target,
+                    "InitializeFull"
+                );
             }
 
             public void SetOnVisibleRowsChanged(Action action)
@@ -267,10 +321,8 @@ namespace nz.alle.SimpleHierarchy
                     }
                 );
             }
-
-            
         }
-        
+
         internal static class EditorGUIUtility
         {
             public static string GetIconPathFromAttribute(Type type)
