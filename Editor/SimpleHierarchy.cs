@@ -13,7 +13,7 @@ namespace nz.alle.SimpleHierarchy
     [InitializeOnLoad]
     internal static class SimpleHierarchy
     {
-        private static readonly bool s_PrintDebug = false;
+        public static readonly bool s_PrintDebug = false;
 
         private static Dictionary<EditorWindow, SceneHierarchyWindow> s_WindowLUT = new();
 
@@ -21,7 +21,7 @@ namespace nz.alle.SimpleHierarchy
 
         // private static EditorWindow s_MouseOverWindow;
         //
-        // private static EditorWindow s_FocusedWindow;
+        private static EditorWindow s_FocusedWindow;
 
         static SimpleHierarchy()
         {
@@ -35,12 +35,13 @@ namespace nz.alle.SimpleHierarchy
             ObjectChangeEvents.changesPublished -= ChangesPublished;
             ObjectChangeEvents.changesPublished += ChangesPublished;
         }
-        
+
         public static void OnDisable()
         {
             ClearItemViewCache();
             foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
             {
+                window.SceneHierarchy.EnsureTreeViewUpToDate();
                 window.SceneHierarchy.treeView.ReloadData();
             }
             s_WindowLUT.Clear();
@@ -69,9 +70,18 @@ namespace nz.alle.SimpleHierarchy
             {
                 return;
             }
-            GetActiveWindow();
-            // SceneHierarchyWindow window = GetActiveWindow();
+
+            // SceneHierarchyWindow window;
+            // if (s_FocusedWindow && s_FocusedWindow.GetType() == s_SceneHierarchyWindowType)
+            // {
+            //     window = GetWrappedWindow(s_FocusedWindow);
+            // }
+            // else
+            // {
+            //     window = GetActiveWindow();
+            // }
             // DoDrawItem(window, instanceID, rect);
+
             // 更新当前所有HierarchyWindow的图标
             foreach ((EditorWindow editorWindow, SceneHierarchyWindow window) in s_WindowLUT)
             {
@@ -85,6 +95,7 @@ namespace nz.alle.SimpleHierarchy
             {
                 return;
             }
+            
             TrackEditorWindows();
             // if (s_MouseOverWindow != EditorWindow.mouseOverWindow)
             // {
@@ -100,19 +111,7 @@ namespace nz.alle.SimpleHierarchy
             //         s_MouseOverWindow.Repaint();
             //     }
             // }
-            // if (s_FocusedWindow != EditorWindow.focusedWindow)
-            // {
-            //     if (s_PrintDebug)
-            //     {
-            //         Debug.Log($"FocusedWindowChanged: {EditorWindow.focusedWindow?.titleContent.text}");
-            //     }
-            //     s_FocusedWindow = EditorWindow.focusedWindow;
-            //     if (s_FocusedWindow && s_FocusedWindow.GetType() == s_SceneHierarchyWindowType)
-            //     {
-            //         SceneHierarchyWindow window = GetWrappedWindow(s_FocusedWindow);
-            //         window.SceneHierarchy.treeView.ReloadData();
-            //     }
-            // }
+            
         }
 
         private static void ChangesPublished(ref ObjectChangeEventStream stream)
@@ -121,6 +120,7 @@ namespace nz.alle.SimpleHierarchy
             {
                 return;
             }
+            
             // HashSet<int> modifiedInstanceIDs = new();
             for (int i = 0; i < stream.length; ++i)
             {
@@ -173,9 +173,17 @@ namespace nz.alle.SimpleHierarchy
                 }
             }
 
-            // SceneHierarchyWindow activeWindow = GetActiveWindow();
-            // UpdateGameObjectTreeViewItemForWindow(activeWindow, modifiedInstanceIDs);
-            // activeWindow.Repaint();
+            // RepaintAllWindows();
+        }
+        
+        private static void RepaintAllWindows()
+        {
+            foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
+            {
+                window.SceneHierarchy.EnsureTreeViewUpToDate();
+                window.SceneHierarchy.treeView.ReloadData();
+            }
+            EditorApplication.RepaintHierarchyWindow();
         }
 
         private static ItemViewCache UpdateItemViewCache(int instanceID)
@@ -269,6 +277,21 @@ namespace nz.alle.SimpleHierarchy
             foreach (EditorWindow editorWindow in toRemove)
             {
                 s_WindowLUT.Remove(editorWindow);
+            }
+            
+            if (s_FocusedWindow != EditorWindow.focusedWindow)
+            {
+                if (s_PrintDebug)
+                {
+                    Debug.Log($"FocusedWindowChanged: {EditorWindow.focusedWindow?.titleContent.text}");
+                }
+                s_FocusedWindow = EditorWindow.focusedWindow;
+                // if (s_FocusedWindow && s_FocusedWindow.GetType() == s_SceneHierarchyWindowType)
+                // {
+                //     SceneHierarchyWindow window = GetWrappedWindow(s_FocusedWindow);
+                //     window.SceneHierarchy.EnsureTreeViewUpToDate();
+                //     window.SceneHierarchy.treeView.ReloadData();
+                // }
             }
         }
 
