@@ -2,7 +2,7 @@
   "name": "nz.alle.simplehierarchy",
   "displayName": "SimpleHierarchy",
   "description": "Replace some default icons with component icons in Unity hierarchy window.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "unity": "2021.3",
   "license": "MIT",
   "repository": {
