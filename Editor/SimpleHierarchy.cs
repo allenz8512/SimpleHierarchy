@@ -95,7 +95,7 @@ namespace nz.alle.SimpleHierarchy
             {
                 return;
             }
-            
+
             TrackEditorWindows();
             // if (s_MouseOverWindow != EditorWindow.mouseOverWindow)
             // {
@@ -111,7 +111,6 @@ namespace nz.alle.SimpleHierarchy
             //         s_MouseOverWindow.Repaint();
             //     }
             // }
-            
         }
 
         private static void ChangesPublished(ref ObjectChangeEventStream stream)
@@ -120,7 +119,7 @@ namespace nz.alle.SimpleHierarchy
             {
                 return;
             }
-            
+
             // HashSet<int> modifiedInstanceIDs = new();
             for (int i = 0; i < stream.length; ++i)
             {
@@ -168,14 +167,14 @@ namespace nz.alle.SimpleHierarchy
                     {
                         Debug.Log($"{type}: {modifiedInstanceID}");
                     }
-                    UpdateItemViewCache(modifiedInstanceID);
+                    UpdateItemViewCache(modifiedInstanceID, null);
                     // modifiedInstanceIDs.Add(modifiedInstanceID);
                 }
             }
 
             // RepaintAllWindows();
         }
-        
+
         private static void RepaintAllWindows()
         {
             foreach (SceneHierarchyWindow window in s_WindowLUT.Values)
@@ -186,7 +185,7 @@ namespace nz.alle.SimpleHierarchy
             EditorApplication.RepaintHierarchyWindow();
         }
 
-        private static ItemViewCache UpdateItemViewCache(int instanceID)
+        private static ItemViewCache UpdateItemViewCache(int instanceID, GameObject gameObject)
         {
             if (!s_ItemViewCacheLUT.TryGetValue(instanceID, out ItemViewCache itemViewCache))
             {
@@ -194,7 +193,11 @@ namespace nz.alle.SimpleHierarchy
                 s_ItemViewCacheLUT[instanceID] = itemViewCache;
             }
 
-            GameObject gameObject = (GameObject)UnityEditor.EditorUtility.InstanceIDToObject(instanceID);
+            if (!gameObject)
+            {
+                gameObject = (GameObject)UnityEditor.EditorUtility.InstanceIDToObject(instanceID);
+            }
+
             // 如果指定了Gizmo图标，那么使用之；否则尝试从GameObject的组件中获取图标
             // 除了GameObject实例外，EditorGUIUtility.GetIconForObject()的参数必须为脚本的Asset对象，使用Component实例作为参数则无效
             Texture2D icon = UnityEditor.EditorGUIUtility.GetIconForObject(gameObject);
@@ -278,7 +281,7 @@ namespace nz.alle.SimpleHierarchy
             {
                 s_WindowLUT.Remove(editorWindow);
             }
-            
+
             if (s_FocusedWindow != EditorWindow.focusedWindow)
             {
                 if (s_PrintDebug)
@@ -371,7 +374,7 @@ namespace nz.alle.SimpleHierarchy
 
             if (!s_ItemViewCacheLUT.TryGetValue(instanceID, out ItemViewCache itemViewCache))
             {
-                itemViewCache = UpdateItemViewCache(instanceID);
+                itemViewCache = UpdateItemViewCache(instanceID, objectPPTR as GameObject);
             }
             // 覆盖原有图标
             UpdateGameObjectTreeViewItem(item, itemViewCache);
