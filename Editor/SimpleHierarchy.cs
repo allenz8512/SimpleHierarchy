@@ -16,7 +16,7 @@ namespace nz.alle.SimpleHierarchy
     [InitializeOnLoad]
     internal static class SimpleHierarchy
     {
-        public static readonly bool s_PrintDebug = true;
+        public static readonly bool PrintDebug = false;
 
         private static Dictionary<EditorWindow, SceneHierarchyWindow> s_WindowLUT = new();
 
@@ -158,7 +158,7 @@ namespace nz.alle.SimpleHierarchy
                             out DestroyGameObjectHierarchyEventArgs destroyGameObjectHierarchyEvent
                         );
                         RemoveItemViewCache(destroyGameObjectHierarchyEvent.instanceId);
-                        if (s_PrintDebug)
+                        if (PrintDebug)
                         {
                             Debug.Log($"DestroyGameObjectHierarchy: {modifiedInstanceID}");
                         }
@@ -166,7 +166,7 @@ namespace nz.alle.SimpleHierarchy
                 }
                 if (modifiedInstanceID != 0)
                 {
-                    if (s_PrintDebug)
+                    if (PrintDebug)
                     {
                         Debug.Log($"{type}: {modifiedInstanceID}");
                     }
@@ -287,7 +287,7 @@ namespace nz.alle.SimpleHierarchy
 
             if (s_FocusedWindow != EditorWindow.focusedWindow)
             {
-                if (s_PrintDebug)
+                if (PrintDebug)
                 {
                     Debug.Log($"FocusedWindowChanged: {EditorWindow.focusedWindow?.titleContent.text}");
                 }
@@ -325,7 +325,7 @@ namespace nz.alle.SimpleHierarchy
             
             if (treeViewChanged)
             {
-                if (s_PrintDebug)
+                if (PrintDebug)
                 {
                     Debug.Log("TreeViewChanged");
                 }
@@ -349,7 +349,7 @@ namespace nz.alle.SimpleHierarchy
             }
             catch (Exception)
             {
-                if (s_PrintDebug)
+                if (PrintDebug)
                 {
                     Debug.LogWarning(
                         $"Control id:{GUIUtility.GetControlID(FocusType.Passive)}, event type: {Event.current.type}"
@@ -475,7 +475,7 @@ namespace nz.alle.SimpleHierarchy
             }
 
             End:
-            if (preferredIcon && s_PrintDebug)
+            if (preferredIcon && PrintDebug)
             {
                 string iconPath = preferredIcon.name;
                 if (string.IsNullOrEmpty(iconPath))

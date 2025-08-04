@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
+// ReSharper disable once CheckNamespace
 namespace nz.alle.SimpleHierarchy
 {
     /// <summary>

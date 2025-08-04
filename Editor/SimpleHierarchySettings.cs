@@ -2,6 +2,7 @@
 // ReSharper disable once CheckNamespace
 using UnityEditor;
 
+// ReSharper disable once CheckNamespace
 namespace nz.alle.SimpleHierarchy
 {
     internal class SimpleHierarchySettings
@@ -19,14 +20,14 @@ namespace nz.alle.SimpleHierarchy
             if (!Enabled)
             {
                 SimpleHierarchy.OnDisable();
-                if (SimpleHierarchy.s_PrintDebug)
+                if (SimpleHierarchy.PrintDebug)
                 {
                     Debug.Log("Simple Hierarchy Disabled");
                 }
             }
             else
             {
-                if (SimpleHierarchy.s_PrintDebug)
+                if (SimpleHierarchy.PrintDebug)
                 {
                     Debug.Log("Simple Hierarchy Enabled");
                 }

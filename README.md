@@ -15,7 +15,7 @@
 - Input `https://github.com/allenz8512/SimpleHierarchy.git` in the pop-up window, and then click `Add`
 
 ## Compatibility
-- Unity 2021.3 - Unity 6.1
+- Unity 2021.3 or later
 
 ## Version
-- 1.1.2
+- 1.2.0
