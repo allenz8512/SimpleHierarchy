@@ -6,6 +6,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using static nz.alle.SimpleHierarchy.Wrappers;
 using Object = UnityEngine.Object;
+#if UNITY_6000_2_OR_NEWER
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace nz.alle.SimpleHierarchy
@@ -13,7 +16,7 @@ namespace nz.alle.SimpleHierarchy
     [InitializeOnLoad]
     internal static class SimpleHierarchy
     {
-        public static readonly bool s_PrintDebug = false;
+        public static readonly bool s_PrintDebug = true;
 
         private static Dictionary<EditorWindow, SceneHierarchyWindow> s_WindowLUT = new();
 
@@ -319,6 +322,7 @@ namespace nz.alle.SimpleHierarchy
         {
             SceneHierarchy hierarchy = window.SceneHierarchy;
             bool treeViewChanged = hierarchy.EnsureTreeViewUpToDate();
+            
             if (treeViewChanged)
             {
                 if (s_PrintDebug)

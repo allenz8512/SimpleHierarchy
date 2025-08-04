@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using Object = UnityEngine.Object;
+#if UNITY_6000_2_OR_NEWER
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace nz.alle.SimpleHierarchy
@@ -16,7 +18,7 @@ namespace nz.alle.SimpleHierarchy
 
         internal static Type s_GameObjectTreeViewItemType;
 
-        internal static Type s_TreeViewControllerType;
+        // internal static Type s_TreeViewControllerType;
 
         internal static Type s_GameObjectTreeViewDataSourceType;
 
@@ -31,8 +33,14 @@ namespace nz.alle.SimpleHierarchy
             s_SceneHierarchyType = typeof(Editor).Assembly.GetType("UnityEditor.SceneHierarchy");
             s_GameObjectTreeViewItemType =
                 typeof(Editor).Assembly.GetType("UnityEditor.GameObjectTreeViewItem");
-            s_TreeViewControllerType =
-                typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController");
+// #if UNITY_6000_2_OR_NEWER
+//             s_TreeViewControllerType =
+//                 typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController<int>");
+// #else
+//              s_TreeViewControllerType =
+//                 typeof(Editor).Assembly.GetType("UnityEditor.IMGUI.Controls.TreeViewController");
+// #endif
+
             s_GameObjectTreeViewDataSourceType =
                 typeof(Editor).Assembly.GetType("UnityEditor.GameObjectTreeViewDataSource");
             // s_GameObjectTreeViewGUIType =
@@ -75,16 +83,16 @@ namespace nz.alle.SimpleHierarchy
 
         internal class SceneHierarchy
         {
-            private object m_Target;
+            private object m_RawSceneHierarchy;
 
             private object m_RawTreeView;
 
             // ReSharper disable once InconsistentNaming
             public TreeViewController treeView { get; private set; }
 
-            public SceneHierarchy(object target)
+            public SceneHierarchy(object rawSceneHierarchy)
             {
-                m_Target = target;
+                m_RawSceneHierarchy = rawSceneHierarchy;
             }
 
             public bool EnsureTreeViewUpToDate()
@@ -92,7 +100,7 @@ namespace nz.alle.SimpleHierarchy
                 bool treeViewChanged = false;
                 object currentTreeView = ReflectionUtils.GetPropertyValue(
                     s_SceneHierarchyType,
-                    m_Target,
+                    m_RawSceneHierarchy,
                     "treeView"
                 );
                 // 执行过SceneHierarchy.Init()，controller发生变化
@@ -108,27 +116,30 @@ namespace nz.alle.SimpleHierarchy
 
         internal class TreeViewController
         {
-            private object m_Target;
+            private object m_RawTreeViewController;
 
             // public GameObjectTreeViewGUI gui { get; private set; }
 
             // ReSharper disable once InconsistentNaming
             public GameObjectTreeViewDataSource data { get; private set; }
 
-            public TreeViewController(object target)
+            public TreeViewController(object rawTreeViewController)
             {
-                m_Target = target;
+                m_RawTreeViewController = rawTreeViewController;
                 // gui = new GameObjectTreeViewGUI(
                 //     ReflectionUtils.GetPropertyValue(s_TreeViewControllerType, target, "gui")
                 // );
-                data = new GameObjectTreeViewDataSource(
-                    ReflectionUtils.GetPropertyValue(s_TreeViewControllerType, target, "data")
+                object rawData = ReflectionUtils.GetPropertyValue(
+                    m_RawTreeViewController.GetType(),
+                    rawTreeViewController,
+                    "data"
                 );
+                data = new GameObjectTreeViewDataSource(rawData);
             }
 
             public void ReloadData()
             {
-                ReflectionUtils.InvokeMethod(s_TreeViewControllerType, m_Target, "ReloadData");
+                ReflectionUtils.InvokeMethod(m_RawTreeViewController.GetType(), m_RawTreeViewController, "ReloadData");
             }
 
             public TreeViewItem GetItemAndRowIndex(int id, out int row)
@@ -139,8 +150,8 @@ namespace nz.alle.SimpleHierarchy
                     0
                 };
                 TreeViewItem item = ReflectionUtils.InvokeMethod<TreeViewItem>(
-                    s_TreeViewControllerType,
-                    m_Target,
+                    m_RawTreeViewController.GetType(),
+                    m_RawTreeViewController,
                     "GetItemAndRowIndex",
                     new[]
                     {
@@ -156,7 +167,7 @@ namespace nz.alle.SimpleHierarchy
 
         internal class GameObjectTreeViewDataSource
         {
-            private object m_Target;
+            private object m_RawData;
 
             // public IList<TreeViewItem> m_Rows =>
             //     ReflectionUtils.GetFieldValue<IList<TreeViewItem>>(
@@ -177,9 +188,9 @@ namespace nz.alle.SimpleHierarchy
             //         );
             // }
 
-            public GameObjectTreeViewDataSource(object target)
+            public GameObjectTreeViewDataSource(object rawData)
             {
-                m_Target = target;
+                m_RawData = rawData;
             }
 
             // public IList<TreeViewItem> GetRows()
